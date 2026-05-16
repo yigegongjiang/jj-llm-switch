@@ -1,0 +1,18 @@
+# Changelog
+
+## 0.1.2 — 2026-05-16
+
+- `cc` / `cx` 当前账号显示精简为仅邮箱 (例: `cc  alice@example.com`).
+- 移除 cx 的过期时间显示: 该字段读自 id_token `exp`, TTL 仅 1h, codex 实际由 refresh_token 自动续期, id_token 过期与可用性无关, 长期显示 `expired` 属于误导.
+- 同步移除 cc 的 org / plan / expiry 展示, 与 cx 对称.
+- 内部清理: 删 `expiry()`, `IdPayload`, `fields()` 等无引用代码.
+
+## 0.1.1 — 2026-05-16
+
+首版.
+
+- 全局命令 `jjllmuse`, 子命令 `cc` / `cx` 分别切 Claude Code / Codex 账号.
+- 邮箱前缀/子串模糊匹配 (`jjllmuse cc ali` ≡ `jjllmuse cc alice@example.com`).
+- 切换前自动 re-backup 当前账号; cc 同时清 `~/.claude.json` 身份缓存.
+- 备份存 `~/.config/jjllmuse/{cc,cx}/auth-backup-<email>.json`, mode 0600.
+- macOS arm64 单文件 binary, 一行 `curl` 安装.
