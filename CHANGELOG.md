@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.4 — 2026-05-16
+
+- `cc switch` 额外清理 `~/.claude.json` 的 `cachedExtraUsageDisabledReason` 字段. 该字段镜像 `/api/oauth/usage` 的 `disabled_reason`, 与上一个账号的 org 绑定, 不清理会导致切换后 `/usage` / extra-usage UI 显示前账号的过期状态.
+
 ## 0.1.3 — 2026-05-16
 
 - 新增 `jjllmuse update`: 拉 GitHub Releases latest binary 原子替换自身.

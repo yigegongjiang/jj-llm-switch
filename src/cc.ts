@@ -52,12 +52,14 @@ function findEmailByRefresh(refresh: string, exclude?: string): string | null {
   return null;
 }
 
-// Strip cached identity so Claude Code refetches it on next launch.
+// Strip account-scoped cached state so Claude Code refetches it on next launch.
+// cachedExtraUsageDisabledReason mirrors `disabled_reason` from /api/oauth/usage and is tied to
+// the previous account's org; stale value misleads /usage and extra-usage UI after a switch.
 function clearClaudeJsonIdentity() {
   if (!existsSync(CLAUDE_JSON)) return;
   let data: Record<string, unknown>;
   try { data = JSON.parse(readFileSync(CLAUDE_JSON, "utf8")); } catch { return; }
-  const removed = ["oauthAccount", "userID"].filter(k => k in data);
+  const removed = ["oauthAccount", "userID", "cachedExtraUsageDisabledReason"].filter(k => k in data);
   if (removed.length === 0) return;
   for (const k of removed) delete data[k];
   const mode = statSync(CLAUDE_JSON).mode & 0o777;
