@@ -29,8 +29,16 @@ function findEmailByRefresh(refresh: string, exclude?: string): string | null {
 
 export function cxCurrent() {
   if (!existsSync(AUTH)) { warn(`no cx auth at ${AUTH} (run 'codex login' first)`); return; }
-  const e = emailOf(parse(readFileSync(AUTH, "utf8")));
-  console.log(`cx  ${cyan(e || "?")}`);
+  // Status query must never crash: any unexpected payload → warn and return.
+  try {
+    const d = JSON.parse(readFileSync(AUTH, "utf8")) as Partial<Auth>;
+    const idToken = d?.tokens?.id_token;
+    if (!idToken) { warn("cx auth format unexpected (missing tokens.id_token)"); return; }
+    const email = decodeJwt<{ email?: string }>(idToken).email ?? "";
+    console.log(`cx  ${cyan(email || "?")}`);
+  } catch (e) {
+    warn(`cx status unavailable: ${e instanceof Error ? e.message : String(e)}`);
+  }
 }
 
 export function cxBackup() {

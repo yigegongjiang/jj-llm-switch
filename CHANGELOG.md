@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.5 — 2026-05-16
+
+- 修复 `cc` 在 Keychain 内容含非可打印字节时崩溃 (`SyntaxError: JSON Parse error` at `JSON.parse(s)`). 根因: macOS `security find-generic-password -w` 在数据非纯 ASCII 时自动以连续 hex dump (无 `0x` 前缀) 输出, 旧实现把 hex 直接喂给 `JSON.parse`. 现在 `readKeychain` 检测 `/^[0-9a-fA-F]+$/` 且偶数长度时 hex 解码回原 JSON. 该路径影响 `jjllmuse` / `jjllmuse cc` / `jjllmuse cc backup` / `jjllmuse cc <email>` 全部命令.
+- `ccCurrent` / `cxCurrent` 状态查询全程 try/catch 兜底, 任何意外 payload 只 warn 不退出. 状态命令绝不 crash 是硬性约束.
+
 ## 0.1.4 — 2026-05-16
 
 - `cc switch` 额外清理 `~/.claude.json` 的 `cachedExtraUsageDisabledReason` 字段. 该字段镜像 `/api/oauth/usage` 的 `disabled_reason`, 与上一个账号的 org 绑定, 不清理会导致切换后 `/usage` / extra-usage UI 显示前账号的过期状态.

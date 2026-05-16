@@ -19,7 +19,18 @@ async function sh(cmd: string[], allowFail = false): Promise<{ stdout: string; c
 
 async function readKeychain(): Promise<string | null> {
   const { stdout, code } = await sh(["security", "find-generic-password", "-s", SERVICE, "-w"], true);
-  return code === 0 ? stdout.replace(/\n$/, "") : null;
+  if (code !== 0) return null;
+  const trimmed = stdout.replace(/\n$/, "");
+  if (!trimmed) return null;
+  // `security -w` falls back to a continuous hex dump (no `0x` prefix, no quotes)
+  // when the stored blob is not pure printable ASCII. Recent Claude Code writes
+  // credentials this way, so we must decode hex back to the original JSON string.
+  // JSON text always contains `{` / `"` / `:` which are not hex chars, so a stdout
+  // that is /^[0-9a-fA-F]+$/ with even length is unambiguously a hex dump.
+  if (/^[0-9a-fA-F]+$/.test(trimmed) && trimmed.length % 2 === 0) {
+    return Buffer.from(trimmed, "hex").toString("utf8");
+  }
+  return trimmed;
 }
 
 async function writeKeychain(payload: string) {
@@ -70,11 +81,18 @@ function clearClaudeJsonIdentity() {
 }
 
 export async function ccCurrent() {
-  const raw = await readKeychain();
-  if (!raw) { warn(`no cc credential in Keychain (run 'claude' /login first)`); return; }
-  const a = parse(raw);
-  const p = await fetchProfile(a.claudeAiOauth.accessToken);
-  console.log(`cc  ${cyan(p?.account?.email ?? "?")}`);
+  // Status query must never crash: any unexpected payload → warn and return.
+  try {
+    const raw = await readKeychain();
+    if (!raw) { warn(`no cc credential in Keychain (run 'claude' /login first)`); return; }
+    const a = JSON.parse(raw) as Partial<Auth>;
+    const token = a?.claudeAiOauth?.accessToken;
+    if (!token) { warn("cc credential format unexpected (missing claudeAiOauth.accessToken)"); return; }
+    const p = await fetchProfile(token);
+    console.log(`cc  ${cyan(p?.account?.email ?? "?")}`);
+  } catch (e) {
+    warn(`cc status unavailable: ${e instanceof Error ? e.message : String(e)}`);
+  }
 }
 
 export async function ccBackup() {
