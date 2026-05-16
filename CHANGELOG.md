@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.7 — 2026-05-16
+
+- 修复 `cc <email>` 切换后 Claude Code 报 `Not logged in · Please run /login`. 根因: 旧备份 (或 hex 路径解码出的 payload) 末尾残留 `\n`, `security add-generic-password -w` 在 payload 含非可打印字节时强制以 binary blob 存入 Keychain (读出变 hex 字符串). Claude Code 自身的 Keychain 读路径不做 hex 解码 → JSON.parse 整段 hex 字符串失败, 直接判为未登录. 修复: `readKeychain` 在 hex 解码后 strip trailing whitespace; `writeKeychain` 写入前再做一次防御性 strip, 并返回 cleaned payload 给 verify 用. 用户侧已有的含 `\n` 的备份文件无需手工清理, 下一次 `cc <email>` 的 re-backup 会用 cleaned 内容覆盖.
+
 ## 0.1.6 — 2026-05-16
 
 - `jjllmuse update` 输出版本号变化: `<旧> -> <新>`, 版本未变追加 `(no change)`. 新版本号通过 spawn 替换后 binary `-v` 取得, 旧版本号取当前进程编译期 `VERSION`. 原先只输出 `updated` 不提示版本差异.

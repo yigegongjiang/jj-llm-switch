@@ -28,13 +28,21 @@ async function readKeychain(): Promise<string | null> {
   // JSON text always contains `{` / `"` / `:` which are not hex chars, so a stdout
   // that is /^[0-9a-fA-F]+$/ with even length is unambiguously a hex dump.
   if (/^[0-9a-fA-F]+$/.test(trimmed) && trimmed.length % 2 === 0) {
-    return Buffer.from(trimmed, "hex").toString("utf8");
+    // Strip trailing whitespace from the decoded payload. Critical: a trailing
+    // \n in the next writeKeychain forces `security` into binary-blob storage
+    // (hex output on read), and Claude Code does not hex-decode reads → switch
+    // succeeds but `claude` reports "Not logged in".
+    return Buffer.from(trimmed, "hex").toString("utf8").replace(/\s+$/, "");
   }
   return trimmed;
 }
 
-async function writeKeychain(payload: string) {
-  await sh(["security", "add-generic-password", "-s", SERVICE, "-a", process.env.USER ?? "user", "-w", payload, "-U"]);
+async function writeKeychain(payload: string): Promise<string> {
+  // Defensive trim: keep payload pure printable ASCII so `security` stores it
+  // as text. See readKeychain for the binary-fallback failure mode.
+  const clean = payload.replace(/\s+$/, "");
+  await sh(["security", "add-generic-password", "-s", SERVICE, "-a", process.env.USER ?? "user", "-w", clean, "-U"]);
+  return clean;
 }
 
 function parse(s: string): Auth {
@@ -134,9 +142,9 @@ export async function ccSwitch(query: string, rebackup = true) {
     }
   }
 
-  await writeKeychain(targetRaw);
+  const wrote = await writeKeychain(targetRaw);
   const verify = await readKeychain();
-  if (verify !== targetRaw) fail("verification mismatch: Keychain read-back ≠ written");
+  if (verify !== wrote) fail("verification mismatch: Keychain read-back ≠ written");
   clearClaudeJsonIdentity();
   info(`switched cc → ${cyan(email)}`);
   console.log(gray("  restart any running 'claude' process"));
