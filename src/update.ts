@@ -1,7 +1,7 @@
 // Self-update: download latest binary, atomic-replace own file.
 import { writeFileSync, chmodSync, renameSync } from "node:fs";
 import { basename } from "node:path";
-import { info, fail } from "./shared.ts";
+import { VERSION, info, fail } from "./shared.ts";
 
 const URL = "https://github.com/yigegongjiang/jj-llm-switch/releases/latest/download/jjllmuse-macos-arm64";
 
@@ -14,5 +14,7 @@ export async function update() {
   writeFileSync(tmp, Buffer.from(await res.arrayBuffer()));
   chmodSync(tmp, 0o755);
   renameSync(tmp, dest);
-  info("updated");
+  const probe = Bun.spawnSync([dest, "-v"]);
+  const latest = probe.stdout.toString().trim() || "unknown";
+  info(`${VERSION} -> ${latest}${VERSION === latest ? " (no change)" : ""}`);
 }

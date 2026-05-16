@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.6 — 2026-05-16
+
+- `jjllmuse update` 输出版本号变化: `<旧> -> <新>`, 版本未变追加 `(no change)`. 新版本号通过 spawn 替换后 binary `-v` 取得, 旧版本号取当前进程编译期 `VERSION`. 原先只输出 `updated` 不提示版本差异.
+
 ## 0.1.5 — 2026-05-16
 
 - 修复 `cc` 在 Keychain 内容含非可打印字节时崩溃 (`SyntaxError: JSON Parse error` at `JSON.parse(s)`). 根因: macOS `security find-generic-password -w` 在数据非纯 ASCII 时自动以连续 hex dump (无 `0x` 前缀) 输出, 旧实现把 hex 直接喂给 `JSON.parse`. 现在 `readKeychain` 检测 `/^[0-9a-fA-F]+$/` 且偶数长度时 hex 解码回原 JSON. 该路径影响 `jjllmuse` / `jjllmuse cc` / `jjllmuse cc backup` / `jjllmuse cc <email>` 全部命令.
