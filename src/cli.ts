@@ -2,6 +2,7 @@
 import { VERSION, fail } from "./shared.ts";
 import { ccCurrent, ccBackup, ccList, ccSwitch } from "./cc.ts";
 import { cxCurrent, cxBackup, cxList, cxSwitch } from "./cx.ts";
+import { update } from "./update.ts";
 
 const HELP = `jjllmuse v${VERSION} — Claude Code / Codex account switcher
 
@@ -10,6 +11,7 @@ USAGE
   jjllmuse <cc|cx>               status + backups of one tool
   jjllmuse <cc|cx> <email>       switch (fuzzy match on email)
   jjllmuse <cc|cx> backup        backup current account (run once after /login)
+  jjllmuse update                self-update from latest GitHub release
   jjllmuse -h | -v
 `;
 
@@ -37,6 +39,8 @@ if (!first) {
   console.log(VERSION);
 } else if (first === "cc" || first === "cx") {
   await run(first, second);
+} else if (first === "update") {
+  await update();
 } else {
   fail(`unknown command '${first}'. Run 'jjllmuse -h'`);
 }

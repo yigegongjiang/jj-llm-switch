@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.3 — 2026-05-16
+
+- 新增 `jjllmuse update`: 拉 GitHub Releases latest binary 原子替换自身.
+
 ## 0.1.2 — 2026-05-16
 
 - `cc` / `cx` 当前账号显示精简为仅邮箱 (例: `cc  alice@example.com`).
