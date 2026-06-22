@@ -82,7 +82,12 @@ function writeCcBackup(email: string, raw: string, verb: string) {
     try {
       const existing = parse(readFileSync(path, "utf8"));
       if (existing.claudeAiOauth.refreshToken) {
-        warn(`live cc credential for ${email} has no refreshToken; kept existing backup`);
+        // Merge: keep live accessToken (valid) + existing refreshToken (preserved).
+        // Without merge, restoring stale backup → expired accessToken + revoked refreshToken → unusable.
+        const merged = JSON.parse(raw);
+        merged.claudeAiOauth.refreshToken = existing.claudeAiOauth.refreshToken;
+        writeSecret(path, JSON.stringify(merged));
+        info(`${verb} cc → ${cyan(email)} (merged: live accessToken + existing refreshToken)`);
         return;
       }
     } catch {}

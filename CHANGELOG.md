@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.9 — 2026-06-22
+
+- 修复 `cc switch` 在 live 凭据缺 `refreshToken` 时，re-backup 丢弃当前有效 accessToken、恢复旧备份后 Claude Code 不可用的问题。旧逻辑整个保留旧备份（含过期 accessToken + 已撤销 refreshToken），切回该账号后 Claude Code 无法认证。现在改为合并：用 live 的新 accessToken 更新备份，同时保留已有 refreshToken。
+
 ## 0.1.8 — 2026-06-22
 
 - 修复新版 Claude Code live Keychain 凭据缺 `refreshToken` 且旧 `/api/oauth/profile` 返回 `401 authentication_error` 时，`jjllmuse cc <email>` 无法识别当前账号的问题。现在会回退到官方 `claude auth status --json` 取 email。
