@@ -12,8 +12,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
-      - run: bun install --frozen-lockfile && bun run build
+      - name: Verify tag matches package.json version
+        run: |
+          pkg="$(jq -r .version package.json)"
+          [ "v${pkg}" = "${GITHUB_REF_NAME}" ] || { echo "tag ${GITHUB_REF_NAME} != v${pkg}" >&2; exit 1; }
+      - run: bun install --frozen-lockfile
+      - run: bun run typecheck
+      - run: bun run build
+      - name: Generate SHA256 checksums
+        working-directory: dist
+        run: |
+          sha256sum jjllmuse-macos-arm64 jjllmuse-macos-x64 > checksums.txt
+          cat checksums.txt
       - uses: softprops/action-gh-release@v2
         with:
-          files: dist/jjllmuse-macos-arm64
           fail_on_unmatched_files: true
+          files: |
+            dist/jjllmuse-macos-arm64
+            dist/jjllmuse-macos-x64
+            dist/checksums.txt

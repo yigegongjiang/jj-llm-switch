@@ -9,16 +9,34 @@ if [ "${1:-}" = "uninstall" ]; then
   exit 0
 fi
 
-if [ "$(uname -sm)" != "Darwin arm64" ]; then
-  echo "unsupported platform; only macOS arm64 binaries are published" >&2
-  exit 1
+[ "$(uname -s)" = "Darwin" ] || { echo "unsupported OS: $(uname -s) (macOS only)" >&2; exit 1; }
+case "$(uname -m)" in
+  arm64)  arch="arm64" ;;
+  x86_64) arch="x64" ;;
+  *)      echo "unsupported arch: $(uname -m)" >&2; exit 1 ;;
+esac
+
+asset="jjllmuse-macos-${arch}"
+base="https://github.com/${REPO}/releases/latest/download"
+
+tmpdir="$(mktemp -d)"
+trap 'rm -rf "$tmpdir"' EXIT
+tmp="${tmpdir}/${asset}"
+
+curl -fL --progress-bar --retry 3 -o "$tmp" "${base}/${asset}"
+
+# Best-effort sha256 verification; fail only on a real mismatch.
+if line="$(curl -fsSL --retry 3 "${base}/checksums.txt" 2>/dev/null | grep " ${asset}\$" || true)"; then
+  if [ -n "$line" ]; then
+    expected="${line%% *}"
+    actual="$(shasum -a 256 "$tmp" | awk '{print $1}')"
+    [ "$expected" = "$actual" ] || { echo "checksum mismatch" >&2; exit 1; }
+  fi
 fi
 
 mkdir -p "$(dirname "$BIN")"
-curl -fL --progress-bar \
-  "https://github.com/${REPO}/releases/latest/download/jjllmuse-macos-arm64" \
-  -o "$BIN"
-chmod +x "$BIN"
+chmod +x "$tmp"
+mv -f "$tmp" "$BIN"
 echo "installed: $BIN"
 "$BIN" -v
 
