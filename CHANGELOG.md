@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.8 — 2026-06-22
+
+- 修复新版 Claude Code live Keychain 凭据缺 `refreshToken` 且旧 `/api/oauth/profile` 返回 `401 authentication_error` 时，`jjllmuse cc <email>` 无法识别当前账号的问题。现在会回退到官方 `claude auth status --json` 取 email。
+- `jjllmuse cc backup` / switch 前 re-backup 遇到 live 凭据缺 `refreshToken` 时，不再覆盖已有完整备份，避免把可切换备份降级为残缺凭据。
+
 ## 0.1.7 — 2026-05-16
 
 - 修复 `cc <email>` 切换后 Claude Code 报 `Not logged in · Please run /login`. 根因: 旧备份 (或 hex 路径解码出的 payload) 末尾残留 `\n`, `security add-generic-password -w` 在 payload 含非可打印字节时强制以 binary blob 存入 Keychain (读出变 hex 字符串). Claude Code 自身的 Keychain 读路径不做 hex 解码 → JSON.parse 整段 hex 字符串失败, 直接判为未登录. 修复: `readKeychain` 在 hex 解码后 strip trailing whitespace; `writeKeychain` 写入前再做一次防御性 strip, 并返回 cleaned payload 给 verify 用. 用户侧已有的含 `\n` 的备份文件无需手工清理, 下一次 `cc <email>` 的 re-backup 会用 cleaned 内容覆盖.
